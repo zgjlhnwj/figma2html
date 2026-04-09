@@ -209,17 +209,6 @@ const applyChanges = () => {
     responseNewCss.value = editableCss.value;
 };
 
-onMounted(async () => {
-    await fetchHistory();
-});
-
-const fetchHistory = async () => {
-    try {
-        const res = await fetch("/api/history");
-        historyList.value = await res.json();
-    } catch (e) { console.error("无法加载历史记录", e); }
-};
-
 const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -227,50 +216,6 @@ const handleFileUpload = (event) => {
     const reader = new FileReader();
     reader.onload = (e) => { existingCssContent.value = e.target.result; };
     reader.readAsText(file);
-};
-
-const resetForm = () => {
-    currentRecordId.value = null;
-    responseHtml.value = "";
-    responseNewCss.value = "";
-    fileKey.value = "";
-    nodeId.value = "";
-    activeTab.value = 'html'; 
-};
-
-const loadHistoryItem = async (id) => {
-    try {
-        isLoading.value = true;
-        const res = await fetch(`/api/history/${id}`);
-        const data = await res.json();
-        
-        currentRecordId.value = data.id;
-        fileKey.value = data.fileKey;
-        nodeId.value = data.nodeId || "";
-        
-        responseHtml.value = data.result.html;
-        responseCleanHtml.value = data.result.cleanHtml || "";
-        responseNewCss.value = data.result.newCss;
-
-        editableHtml.value = data.result.cleanHtml || "";
-        editableCss.value = data.result.newCss || "";
-      
-
-        
-    } catch (e) { alert("无法加载记录。"); } 
-    finally { isLoading.value = false; }
-};
-
-const deleteHistoryItem = async (id) => {
-    if(!confirm("确定要删除吗？")) return;
-    try {
-        const res = await fetch(`/api/history/${id}`, { method: "DELETE" });
-        const data = await res.json();
-        if (data.success) {
-            await fetchHistory();
-            if (currentRecordId.value === id) resetForm();
-        }
-    } catch (e) { alert("发生错误。"); }
 };
 
 async function convertFigma() {
@@ -301,9 +246,6 @@ async function convertFigma() {
 
     editableHtml.value = data.cleanHtml || "";
     editableCss.value = data.newCss || "";
-
-    
-    await fetchHistory();
 
   } catch (err) {
     alert("错误：" + err.message);
