@@ -10,6 +10,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.85.0",
     "@google/generative-ai": "^0.24.1",
     "@primevue/nuxt-module": "^4.5.4",
     "@primevue/themes": "^4.5.4",

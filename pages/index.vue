@@ -2,56 +2,11 @@
   <div v-if="isLoading" class="loading-overlay">
     <div class="ai-spinner"></div>
     <div class="loading-content">
-        <h3>Yapay Zeka Çalışıyor</h3>
-        <p>Tasarımın koda dönüştürülüyor...</p>
+        <h3>AI 工作中</h3>
+        <p>正在将设计转换为代码...</p>
     </div>
   </div>
   <div class="app-layout">
-    
-    <aside class="sidebar">
-      <div class="sidebar-header">  
-        <h2>AI Figma Converter</h2>
-      </div>
-      
-      <div class="history-list">
-        <div v-if="historyList.length === 0" class="empty-state">
-          <i class="pi pi-folder-open" style="font-size: 2rem; margin-bottom: 10px;"></i>
-          <p>Geçmiş boş.</p>
-        </div>
-
-        <div 
-          v-for="item in historyList" 
-          :key="item.id"
-          class="history-item"
-          :class="{ 'active': currentRecordId === item.id }"
-          @click="loadHistoryItem(item.id)"
-        >
-          <div class="history-content">
-             <div class="history-key" :title="item.fileKey">
-                {{ item.fileKey.substring(0, 15) }}...
-             </div>
-             <div class="history-meta">
-               <span class="history-time">{{ item.date.split(' ')[1] }}</span>
-               <span class="history-tag" v-if="item.cssFileName !== 'No CSS'">CSS Var</span>
-             </div>
-          </div>
-
-          <Button 
-            icon="pi pi-trash" 
-            text 
-            rounded 
-            severity="danger" 
-            size="small"
-            class="delete-btn"
-            @click.stop="deleteHistoryItem(item.id)" 
-          />
-        </div>
-      </div>
-      
-      <div class="sidebar-footer">
-        <Button label="Yeni Proje" icon="pi pi-plus" class="full-width-btn" severity="info" @click="resetForm" />
-      </div>
-    </aside>
 
     <main class="main-content">
       <div class="content-wrapper">
@@ -60,18 +15,18 @@
             <h1 class="page-title">
                Figma to Code 
             </h1>
-            <p class="subtitle">Figma tasarımlarınızı akıllıca HTML/CSS koduna dönüştürün.</p>
+            <p class="subtitle">智能地将 Figma 设计转换为 HTML/CSS 代码</p>
         </div>
 
         <div class="input-card">
           <div class="form-group css-upload-area">
             <label class="label-heading">
-                 1. Global CSS (Opsiyonel)
+                 1. 全局 CSS (可选)
             </label>
             <div class="file-upload-wrapper">
                 <label class="file-btn" :class="{'file-selected': cssFileName}">
                     <i class="pi pi-upload"></i>
-                    {{ cssFileName ? 'Dosya Değiştir' : 'main.css Yükle' }}
+                    {{ cssFileName ? '更换文件' : '加载 main.css' }}
                     <input type="file" accept=".css" @change="handleFileUpload" style="display:none"/>
                 </label>
                 <div v-if="cssFileName" class="file-info">
@@ -79,7 +34,7 @@
                    <i class="pi pi-check-circle success-icon"></i>
                 </div>
                 <div v-else class="file-info empty">
-                   Yüklü dosya yok (AI kendi stillerini oluşturacak)
+                   没有已加载的文件 (AI 将生成自己的样式)
                 </div>
             </div>
           </div>
@@ -96,22 +51,22 @@
                <InputText v-model="nodeId" placeholder="1:2" class="input-full" />
             </div>
             <div class="form-col btn-col">
-               <Button label="Dönüştür"  severity="success" class="convert-btn" @click="convertFigma" :loading="isLoading" />
+               <Button label="转换"  severity="success" class="convert-btn" @click="convertFigma" :loading="isLoading" />
             </div>
           </div>
         </div>
         
         <div v-if="isLoading" class="loading-container">
             <div class="loader"></div>
-            <h3>Yapay Zeka Çalışıyor...</h3>
-            <p>Tasarım analiz ediliyor, CSS yapısı eşleştiriliyor.</p>
+            <h3>AI 工作中...</h3>
+            <p>正在分析设计，匹配 CSS 结构</p>
         </div>
 
         <div v-if="responseHtml && !isLoading" class="results-section">
           
           <div class="section-header">
-             <h2><i class="pi pi-desktop"></i> Önizleme</h2>
-             <Button label="Yeni Sekmede Aç" icon="pi pi-external-link" text size="small" @click="openPreviewInNewTab"/>
+             <h2><i class="pi pi-desktop"></i> 预览</h2>
+             <Button label="在新标签页打开" icon="pi pi-external-link" text size="small" @click="openPreviewInNewTab"/>
           </div>
           
           <div class="preview-box">
@@ -143,12 +98,12 @@
                         <input type="checkbox" v-model="isEditMode">
                         <span class="slider round"></span>
                     </label>
-                    <span class="toggle-label">Düzenle</span>
+                    <span class="toggle-label">编辑</span>
                 </div>
 
                 <Button 
                    v-if="isEditMode"
-                   label="Uygula" 
+                   label="应用" 
                    icon="pi pi-play" 
                    size="small" 
                    class="apply-btn"
@@ -156,7 +111,7 @@
                 />
 
                  <Button 
-                   label="Kodu Kopyala" 
+                   label="复制代码" 
                    icon="pi pi-copy" 
                    text 
                    size="small" 
@@ -186,30 +141,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, triggerRef } from "vue";
+import { ref, onMounted } from "vue";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 
 import hljs from "highlight.js";
 import 'highlight.js/styles/atom-one-dark.css';
 
-
-const loadingMessage = ref(' Yapay Zeka Tasarımı Kodluyor...'); 
-
-const startLoading = () => {
-    isLoading.value = true;
-};
-
-const stopLoading = () => {
-    isLoading.value = false;
-};
-
 const getHighlightedCode = (code, lang) => {
     if (!code) return "";
     try {
         return hljs.highlight(code, { language: lang }).value;
     } catch (e) {
-        console.error("Highlight hatası:", e);
+        console.error("高亮错误：", e);
         return code; 
     }
 };
@@ -242,14 +186,14 @@ const applyChanges = () => {
         <meta charset="UTF-8">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <style>
-            /* --- SİGORTA KODLARI (Layout bozulmasını engeller) --- */
+            /* --- 保险代码（防止布局破坏） --- */
             * { box-sizing: border-box; margin: 0; padding: 0; }
             body { font-family: 'Inter', sans-serif; background-color: #f4f4f4; }
             
-            /* Eğer dosya yüklediyseniz o stilleri de koru */
+            /* 如果您加载了文件，也保留这些样式 */
             ${existingCssContent.value || ''}
 
-            /* --- KULLANICININ EDİTÖRDEKİ KODLARI --- */
+            /* --- 用户在编辑器中的代码 --- */
             ${editableCss.value}
         </style>
       </head>
@@ -273,7 +217,7 @@ const fetchHistory = async () => {
     try {
         const res = await fetch("/api/history");
         historyList.value = await res.json();
-    } catch (e) { console.error("Geçmiş yüklenemedi", e); }
+    } catch (e) { console.error("无法加载历史记录", e); }
 };
 
 const handleFileUpload = (event) => {
@@ -313,12 +257,12 @@ const loadHistoryItem = async (id) => {
       
 
         
-    } catch (e) { alert("Kayıt yüklenemedi."); } 
+    } catch (e) { alert("无法加载记录。"); } 
     finally { isLoading.value = false; }
 };
 
 const deleteHistoryItem = async (id) => {
-    if(!confirm("Silinsin mi?")) return;
+    if(!confirm("确定要删除吗？")) return;
     try {
         const res = await fetch(`/api/history/${id}`, { method: "DELETE" });
         const data = await res.json();
@@ -326,11 +270,11 @@ const deleteHistoryItem = async (id) => {
             await fetchHistory();
             if (currentRecordId.value === id) resetForm();
         }
-    } catch (e) { alert("Hata oluştu."); }
+    } catch (e) { alert("发生错误。"); }
 };
 
 async function convertFigma() {
-  if (!fileKey.value) { alert("Lütfen Figma File Key giriniz."); return; }
+  if (!fileKey.value) { alert("请输入 Figma File Key。"); return; }
   
   isLoading.value = true;
   currentRecordId.value = null;
@@ -362,7 +306,7 @@ async function convertFigma() {
     await fetchHistory();
 
   } catch (err) {
-    alert("Hata: " + err.message);
+    alert("错误：" + err.message);
   } finally {
     isLoading.value = false;
   }

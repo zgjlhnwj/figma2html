@@ -22,10 +22,10 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
     const { fileKey, nodeId, existingCss, cssFileName } = body;
 
-    if (!fileKey) throw createError({ statusCode: 400, statusMessage: "File Key Eksik" });
+    if (!fileKey) throw createError({ statusCode: 400, statusMessage: "缺少 File Key" });
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw createError({ statusCode: 500, statusMessage: "API Key bulunamadı." });
+    if (!apiKey) throw createError({ statusCode: 500, statusMessage: "未找到 API Key。" });
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
@@ -37,74 +37,74 @@ export default defineEventHandler(async (event) => {
     });
 
     try {
-        console.log(` İşlem Başlıyor... File: ${fileKey}`);
+        console.log(`处理开始... 文件：${fileKey}`);
 
         const figmaResult = await fetchFigmaData(fileKey, nodeId);
         const rawHtml = figmaResult.html; 
         const originalWidth = figmaResult.width;
         const originalHeight = figmaResult.height;
 
-        if (!rawHtml) throw new Error("Figma verisi boş geldi.");
+        if (!rawHtml) throw new Error("Figma 数据为空。");
 
-        console.log(` HTML Oluşturuluyor (Full Mode)...`);
+        console.log(`正在生成 HTML（全模式）...`);
 
         let htmlSystemInstruction = `
-        Sen Yaratıcı Bir Yazar DEĞİLSİN. Sen Disiplinli Bir Kod Dönüştürme Motorusun.
+        你不是一个创意作家。你是一个严格的代码转换引擎。
 
-        KESİN VE AŞILAMAZ KURALLAR (VERBOSITY RULES):
-        1. **TEKRAR ETMEKTEN KORKMA (NO SUMMARIZATION):**
-           - Veride birbirinin aynısı 20 tane "Kart" varsa, HTML çıktısında da 20 tane <div> bloğu olacak.
-           - ASLA "Repeat x times", "..." veya "" yazma.
-           - Bir listede 10 madde varsa 10'unu da yaz. Kodu kısaltmaya çalışma. Uzun kod senin başarın demektir.
+        严格不可违反的规则（VERBOSITY RULES）：
+        1. **不要害怕重复（NO SUMMARIZATION）：**
+           - 如果数据中有20个相同的"卡片"，HTML 输出中也要有20个 <div> 块。
+           - 绝对不要写 "Repeat x times"、"..." 或 "" 。
+           - 如果列表中有10个项目，就把10个都写出来。不要尝试缩短代码。长代码意味着你的成功。
 
-        2. **GÖRSELLER VE İKONLAR:**
-           - **İkonlar:** Eğer element bir ikon, ok, logo veya vektör ise; uygun 'FontAwesome 6' class'ı kullan (örn: <i class="fa-solid fa-user"></i>).
-           - **Resimler:** Büyük fotoğraf alanları için: <img src="https://placehold.co/${Math.round(originalWidth/4)}x200?text=Img" alt="Görsel" class="img-fluid" /> kullan.
-           - ASLA boş, anlamsız bir <div> bırakma.
+        2. **图片和图标：**
+           - **图标：** 如果元素是图标、箭头、logo 或矢量图形；使用合适的 'FontAwesome 6' class（例如：<i class="fa-solid fa-user"></i>）。
+           - **图片：** 对于大图片区域：使用 <img src="https://placehold.co/${Math.round(originalWidth/4)}x200?text=Img" alt="图片" class="img-fluid" />。
+           - 绝对不要留下空的、无意义的 <div>。
 
-        3. **YAPI VE SEMANTİK:**
-           - <header>, <nav>, <main>, <section>, <footer> etiketlerini kullanarak Semantic HTML oluştur.
-           - Class isimlerini BEM (Block Element Modifier) yapısına uygun ver.
+        3. **结构和语义：**
+           - 使用 <header>、<nav>、<main>、<section>、<footer> 标签创建语义化 HTML。
+           - 使用 BEM（Block Element Modifier）结构命名 class。
 
-        ÇIKTI FORMATI:
-        Sadece HTML kod bloğu döndür (\`\`\`html ... \`\`\`).
+        输出格式：
+        只返回 HTML 代码块 (\`\`\`html ... \`\`\`)。
         `;
         
-        let htmlUserPrompt = `İŞLENECEK VERİ:\n${rawHtml}`;
+        let htmlUserPrompt = `要处理的数据：\n${rawHtml}`;
 
         const htmlResult = await geminiModel.generateContent([htmlSystemInstruction, htmlUserPrompt]);
         let generatedHtml = htmlResult.response.text().replace(/```html/g, "").replace(/```/g, "").trim();
 
-        console.log(` CSS Oluşturuluyor...`);
+        console.log(`正在生成 CSS...`);
 
         let cssSystemInstruction = `
-        Sen Kıdemli CSS Mühendisisin. HTML yapısına göre modern CSS yaz.
+        你是一位高级 CSS 工程师。根据 HTML 结构编写现代 CSS。
 
-        LAYOUT KURALLARI (KAYMAYI ENGELLE):
-        1. **POZİSYONLAMA (ABSOLUTE YASAĞI):**
-           - Ana iskelet (layout) için ASLA 'position: absolute' kullanma.
-           - SADECE Flexbox (display: flex, gap) veya Grid kullan.
-           - 'position: absolute' sadece küçük rozetler (badges) için kullanılabilir.
+        布局规则（防止偏移）：
+        1. **定位（绝对定位禁止）：**
+           - 绝对不要对主框架（layout）使用 'position: absolute'。
+           - 只使用 Flexbox（display: flex, gap）或 Grid。
+           - 'position: absolute' 只可用于小徽章（badges）。
 
-        2. **GÖRÜNÜRLÜK GARANTİSİ:**
-           - İçi boş ama arka plan rengi olan kutulara (dekoratif şekiller) mutlaka 'min-width' ve 'min-height' ver. Yoksa görünmezler.
-           - Metinlerin taşmaması için 'word-break: break-word' ekle.
+        2. **可见性保证：**
+           - 对于有背景色但内部空的盒子（装饰形状），必须设置 'min-width' 和 'min-height'。否则它们不可见。
+           - 为防止文本溢出，添加 'word-break: break-word'。
 
-        3. **MODERN STİL:**
-           - Renkleri :root değişkenlerinde tanımla.
-           - Fontları ve renkleri orijinal veriden birebir al.
+        3. **现代风格：**
+           - 在 :root 变量中定义颜色。
+           - 字体和颜色完全从原始数据中获取。
 
-        ÇIKTI FORMATI:
-        Sadece CSS kodu döndür (\`\`\`css ... \`\`\`).
+        输出格式：
+        只返回 CSS 代码 (\`\`\`css ... \`\`\`)。
         `;
 
         let cssUserPrompt = `
-        HTML YAPISI:
+        HTML 结构：
         ${generatedHtml}
-        
-        ORİJİNAL VERİ REFERANSI:
+
+        原始数据参考：
         ${rawHtml.substring(0, 30000)}
-        ${existingCss ? `NOT: Kullanıcının kendi CSS dosyası var. Sen sadece eksik kalan layout/pozisyon kodlarını tamamla.` : ''}
+        ${existingCss ? `注意：用户有自己的 CSS 文件。你只需补充缺失的布局/定位代码。` : ''}
         `;
 
         const cssResult = await geminiModel.generateContent([cssSystemInstruction, cssUserPrompt]);
@@ -123,7 +123,7 @@ export default defineEventHandler(async (event) => {
         
 
         const finalHtml = `<!DOCTYPE html>
-<html lang="tr">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -166,18 +166,18 @@ export default defineEventHandler(async (event) => {
 
         const record = {
             id: uuidv4(),
-            date: new Date().toLocaleString("tr-TR"),
+            date: new Date().toLocaleString("zh-CN"),
             fileKey, nodeId,
             cssFileName: cssFileName || (existingCss ? "Custom CSS" : "No CSS"),
             result: { html: finalHtml, cleanHtml: generatedHtml, newCss: generatedCss, existingCss }
         };
 
         saveToHistory(record);
-        console.log(" İşlem Tamamlandı !");
+        console.log("处理完成！");
         return record.result;
 
     } catch (error: any) {
-        console.error(" HATA:", error.message);
-        throw createError({ statusCode: 500, statusMessage: error.message || "Sunucu Hatası" });
+        console.error("错误：", error.message);
+        throw createError({ statusCode: 500, statusMessage: error.message || "服务器错误" });
     }
 });

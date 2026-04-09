@@ -5,24 +5,24 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
   
-  // PrimeVue modülünü ekliyoruz
+  // 添加 PrimeVue 模块
   modules: [
     '@primevue/nuxt-module'
   ],
   
-  // PrimeVue tema ayarları
+  // PrimeVue 主题设置
   primevue: {
     options: {
         theme: {
             preset: Aura,
             options: {
-                darkModeSelector: '.my-app-dark', // Dark modu manuel kontrol etmek için
+                darkModeSelector: '.my-app-dark', // 手动控制深色模式
             }
         }
     }
   },
   
-  // İkon setini yüklüyoruz
+  // 加载图标集
   css: [
     'primeicons/primeicons.css'
   ]
